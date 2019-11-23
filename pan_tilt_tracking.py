@@ -90,10 +90,10 @@ if __name__ == "__main__":
     if (args["pick"]):
         lower, upper = ColorPicker().pick(0)
         print("Tracking [H S W]: lower " + str(lower) + " | upper " + str(upper))
-        object_center = ColorCenter(lower[0], upper[0], lower[1])
+        object_center = ColorCenter(lower[0], lower[1], lower[2], upper[0], upper[1], upper[2])
     if (args["color"] is not None):
         print("Tracking [H S W]: lower [" + str(args["color"][0]) + " 100 100] | upper [" + str(args["color"][1]) + " 255 255]")
-        object_center = ColorCenter(args["color"][0], args["color"][1])
+        object_center = ColorCenter(args["color"][0], 100, 100, args["color"][1], 255, 255)
     if (args["face"]):
         if (args["dnn"]):
             print("Tracking face")

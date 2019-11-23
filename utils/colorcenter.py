@@ -3,10 +3,10 @@ import cv2
 
 class ColorCenter:
 	
-	def __init__(self, low, up):
+	def __init__(self, lowH, lowS, lowV, upH, upS, upV):
 		print("ColorCenter Inizializzato")
-		self.colorLower = (low, 100, 100)
-		self.colorUpper = (up, 255, 255)
+		self.colorLower = (lowH, lowS, lowV)
+		self.colorUpper = (upH, upS, upV)
 
 	def update(self, frame, frameCenter):
 		# convert the frame to hsv
