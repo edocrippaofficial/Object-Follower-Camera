@@ -2,7 +2,6 @@ from multiprocessing import Manager
 from multiprocessing import Process
 from imutils.video import VideoStream
 from utils.colorpicker import ColorPicker
-from utils.duckcenter import DuckCenter
 from utils.colorcenter import ColorCenter
 from utils.facecenter_dnn import FaceCenterDnn
 from utils.facecenter_haar import FaceCenterHaar
@@ -16,13 +15,13 @@ import sys
 import cv2
 
 # PID values
-panP = 0.03
-panI = 0.005
-panD = 0.02
+panP = 0.4
+panI = 0.02
+panD = 0.01
 
-tiltP = 0.03
-tiltI = 0.005
-tiltD = 0.02
+tiltP = 0.4
+tiltI = 0.02
+tiltD = 0.01
 
 stream = None
 centerX = 0
@@ -34,10 +33,10 @@ def track(object_centerX, object_centerY):
         frame = stream.read()
         frame = cv2.flip(frame, 1)
         # Find the object_centerect location (x, y, radius) in the stream
-        ((object_centerX.value, object_centerY.value), rad) = object_center.update(frame, (centerX, centerY))
+        object_centerX.value, object_centerY.value, radius = object_center.update(frame, centerX, centerY)
         # Draw the bounding circle on the frame
-        if rad is not None:
-            cv2.circle(frame, (int(object_centerX.value), int(object_centerY.value)), int(rad), (0, 255, 255), 2)
+        if radius > 0:
+            cv2.circle(frame, (int(object_centerX.value), int(object_centerY.value)), int(radius), (0, 255, 255), 2)
         # Display frame
         cv2.imshow("Pan-Tilt Tracking", frame)
         # End process when key 'q' is pressed
@@ -55,19 +54,30 @@ def pid(output, coord, object_center):
         screen_center = centerY
     pid.initialize()
     while True:
-        # Calculate the error and update output value
+        # Calculate the error
         error = screen_center - object_center.value
-        output.value = pid.update(error)
+        # If error is 0 then object is in center or is not detected, so re-initialize PID
+        if error == 0:
+            pid.initialize()
+            output.value = 0
+        else:
+            output.value = pid.update(error)
+            time.sleep(0.01)
 
 def serial_comm(pan, tilt):
+    pan_prev = -1
+    tilt_prev = -1
     while True:
-        print("Pan: " + str(limit_value(int(pan.value))) + " | Tilt: " + str(limit_value(int(-tilt.value))))
-        if arduino:
-            arduino.write(struct.pack(">b", limit_value(int(pan.value))))
-            arduino.write(struct.pack(">b", limit_value(int(-tilt.value))))
-        time.sleep(0.2)
+        pan_value = clamp(int(pan.value))
+        tilt_value = clamp(int(tilt.value))
+        if arduino and (pan_value != pan_prev or tilt_value != tilt_prev):
+            pan_prev = pan_value
+            tilt_prev = tilt_value
+            print("Pan: " + str(pan_value) + " | Tilt: " + str(tilt_value))
+            arduino.write(struct.pack(">b", pan_value))
+            arduino.write(struct.pack(">b", tilt_value))
 
-def limit_value(value):
+def clamp(value):
     return max(-128, min(value, 127))
 
 if __name__ == "__main__":
@@ -86,7 +96,7 @@ if __name__ == "__main__":
     # Initialize object_center according to tracker choice
     if (args["duck"]):
         print("Tracking duck")
-        object_center = DuckCenter()
+        object_center = ColorCenter(12, 100, 100, 32, 255, 255)
     if (args["pick"]):
         lower, upper = ColorPicker().pick(0)
         print("Tracking [H S W]: lower " + str(lower) + " | upper " + str(upper))
@@ -96,10 +106,10 @@ if __name__ == "__main__":
         object_center = ColorCenter(args["color"][0], 100, 100, args["color"][1], 255, 255)
     if (args["face"]):
         if (args["dnn"]):
-            print("Tracking face")
+            print("Tracking face - with deep neural network")
             object_center = FaceCenterDnn(0.8)
         else:
-            print("Tracking face - with deep neural network")
+            print("Tracking face - with haar cascade")
             object_center = FaceCenterHaar()
      
     # Initialize arduino connection if required
