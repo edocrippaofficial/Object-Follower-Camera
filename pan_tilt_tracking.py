@@ -15,12 +15,12 @@ import sys
 import cv2
 
 # PID values
-panP = 0.4
-panI = 0.02
+panP = 0.5
+panI = 0.03
 panD = 0.01
 
-tiltP = 0.4
-tiltI = 0.02
+tiltP = 0.6
+tiltI = 0.04
 tiltD = 0.01
 
 stream = None
@@ -57,7 +57,7 @@ def pid(output, coord, object_center):
         # Calculate the error
         error = screen_center - object_center.value
         # If error is 0 then object is in center or is not detected, so re-initialize PID
-        if error == 0:
+        if abs(error) < screen_center / 10:
             pid.initialize()
             output.value = 0
         else:
@@ -69,7 +69,7 @@ def serial_comm(pan, tilt):
     tilt_prev = -1
     while True:
         pan_value = clamp(int(pan.value))
-        tilt_value = clamp(int(tilt.value))
+        tilt_value = clamp(int(-tilt.value))
         if arduino and (pan_value != pan_prev or tilt_value != tilt_prev):
             pan_prev = pan_value
             tilt_prev = tilt_value
@@ -85,12 +85,13 @@ if __name__ == "__main__":
     # Construct the argument parse and parse the arguments
     ap = argparse.ArgumentParser()
     group = ap.add_mutually_exclusive_group(required=True)
-    group.add_argument("--duck", help="track a duck", action='store_true')
-    group.add_argument("--face", help="track a human face", action='store_true')
-    group.add_argument("--color", help="track selected color (need lower and upper HSV values)", nargs=2, type=int, metavar=('low','up'))
-    group.add_argument("--pick", help="track a picked color", action='store_true')
+    group.add_argument("-d", "--duck", help="track a duck", action='store_true')
+    group.add_argument("-f", "--face", help="track a human face", action='store_true')
+    group.add_argument("-c", "--color", help="track selected color (need lower and upper HSV values)", nargs=2, type=int, metavar=('low','up'))
+    group.add_argument("-p", "--pick", help="track a picked color", action='store_true')
     ap.add_argument("-na", help="run script without Arduino connected", action='store_false')
-    ap.add_argument("--dnn", help="use a deep neural network instead of haar cascades for tracking the face (useless for the duck)", action='store_true')
+    ap.add_argument("--dnn", help="use a deep neural network instead of haar cascades for tracking the face", action='store_true')
+    ap.add_argument("--camera", help="select the camera", default=2, type=int)
     args = vars(ap.parse_args())
 
     # Initialize object_center according to tracker choice
@@ -98,7 +99,7 @@ if __name__ == "__main__":
         print("Tracking duck")
         object_center = ColorCenter(12, 100, 100, 32, 255, 255)
     if (args["pick"]):
-        lower, upper = ColorPicker().pick(0)
+        lower, upper = ColorPicker().pick(args["camera"])
         print("Tracking [H S W]: lower " + str(lower) + " | upper " + str(upper))
         object_center = ColorCenter(lower[0], lower[1], lower[2], upper[0], upper[1], upper[2])
     if (args["color"] is not None):
@@ -125,7 +126,7 @@ if __name__ == "__main__":
             sys.exit()
 
     # Start the video stream
-    stream = VideoStream(src=0).start()
+    stream = VideoStream(src=args["camera"]).start()
     # Get centerX and centertY from stream resolution
     frame = stream.read()
     (height, width) = frame.shape[:2]

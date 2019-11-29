@@ -122,7 +122,7 @@ unsigned long velocityToPeriod(signed char velocity, int& dir) {
   } else {
     // Direzione = segno della velocità
     dir = velocity / abs(velocity);
-    return 30233 - abs(velocity) * 233UL;
+    return 70535UL - abs(velocity) * 535UL;
   }
 }
 
