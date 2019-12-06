@@ -85,19 +85,15 @@ if __name__ == "__main__":
     # Construct the argument parse and parse the arguments
     ap = argparse.ArgumentParser()
     group = ap.add_mutually_exclusive_group(required=True)
-    group.add_argument("-d", "--duck", help="track a duck", action='store_true')
     group.add_argument("-f", "--face", help="track a human face", action='store_true')
     group.add_argument("-c", "--color", help="track selected color (need lower and upper HSV values)", nargs=2, type=int, metavar=('low','up'))
     group.add_argument("-p", "--pick", help="track a picked color", action='store_true')
     ap.add_argument("-na", help="run script without Arduino connected", action='store_false')
     ap.add_argument("--dnn", help="use a deep neural network instead of haar cascades for tracking the face", action='store_true')
-    ap.add_argument("--camera", help="select the camera", default=2, type=int)
+    ap.add_argument("--camera", help="select the camera source", default=2, type=int, metavar=("src"))
     args = vars(ap.parse_args())
 
     # Initialize object_center according to tracker choice
-    if (args["duck"]):
-        print("Tracking duck")
-        object_center = ColorCenter(12, 100, 100, 32, 255, 255)
     if (args["pick"]):
         lower, upper = ColorPicker().pick(args["camera"])
         print("Tracking [H S W]: lower " + str(lower) + " | upper " + str(upper))
