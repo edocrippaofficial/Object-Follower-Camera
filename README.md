@@ -12,7 +12,7 @@ optional arguments:
   -na                   run script without Arduino connected
   --dnn                 use a deep neural network instead of haar cascades for
                         tracking the face
-  --camera src       select the camera source
+  --camera src          select the camera source
 
 </pre>
 
