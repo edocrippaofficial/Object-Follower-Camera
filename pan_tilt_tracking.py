@@ -28,6 +28,7 @@ centerX = 0
 centerY = 0
 
 def track(object_centerX, object_centerY):
+    writer = cv2.VideoWriter('video.avi', cv2.VideoWriter_fourcc(*'XVID'), 30, (centerX*2, centerY*2))
     while True:
         # Read the next frame from video stream
         frame = stream.read()
@@ -39,9 +40,11 @@ def track(object_centerX, object_centerY):
             cv2.circle(frame, (int(object_centerX.value), int(object_centerY.value)), int(radius), (0, 255, 255), 2)
         # Display frame
         cv2.imshow("Pan-Tilt Tracking", frame)
+        writer.write(frame)
         # End process when key 'q' is pressed
         if cv2.waitKey(1) & 0xFF == ord("q"):
             stream.stop()
+            writer.release()
             break
 
 def pid(output, coord, object_center):
